@@ -41,7 +41,7 @@ def init_db():
     if count == 0:
         cursor.execute(
             "insert into users (username, password, role) values (?,?,?)",
-            ('admin', '1234', 'admin')
+            ('admin', 'mrgolem1128!', 'admin')
         )
     conn.commit()
     conn.close()
