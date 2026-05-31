@@ -1,0 +1,265 @@
+from flask import Flask, request, redirect, render_template, session, jsonify
+import sqlite3
+from datetime import datetime
+
+app = Flask(__name__)
+app.secret_key = '12345'  # 제공해주신 시크릿 키 유지
+
+
+def get_db():
+    # 데이터베이스 파일명을 게임에 맞게 변경
+    conn = sqlite3.connect('game2048.db')
+    cursor = conn.cursor()
+    return conn, cursor
+
+
+def init_db():
+    conn, cursor = get_db()
+
+    # 1. 유저 테이블 (기존 구조 유지)
+    cursor.execute('''create table if not exists users (
+        id integer primary key autoincrement,
+        username text, 
+        password text,
+        role text default 'user'
+    )''')
+
+    # 2. 점수 기록 테이블 (기존 posts 대신 생성)
+    cursor.execute('''create table if not exists scores (
+        id integer primary key autoincrement,
+        username text,
+        score integer,
+        max_tile integer,
+        date text
+    )''')
+
+    # 관리자 계정 생성 (기존 구조 유지)
+    cursor.execute('select count(*) from users')
+    count = cursor.fetchone()[0]
+    if count == 0:
+        cursor.execute(
+            "insert into users (username, password, role) values (?,?,?)",
+            ('admin', '1234', 'admin')
+        )
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+# --- [메인 화면: 게임 페이지 및 개인 최고점 확인] ---
+@app.route('/')
+def index():
+    # 로그인하지 않은 유저는 로그인 페이지로 이동 (기존 구조 유지)
+    if 'username' not in session:
+        return redirect('/login/')
+
+    current_user = session['username']
+
+    # 현재 로그인한 유저의 개인 최고 점수 가져오기
+    conn, cursor = get_db()
+    cursor.execute('select max(score) from scores where username = ?', (current_user,))
+    best_score = cursor.fetchone()[0]
+    if best_score is None:
+        best_score = 0
+    conn.close()
+
+    # index.html로 넘겨주어 게임 화면과 본인 최고점을 표시합니다.
+    return render_template('index.html', username=current_user, best_score=best_score)
+
+
+# --- [점수 등록 API] ---
+# 자바스크립트(프론트엔드)에서 게임오버 시 AJAX(Fetch)로 점수를 보낼 라우트입니다.
+@app.route('/save_score/', methods=['POST'])
+def save_score():
+    if 'username' not in session:
+        return jsonify({'result': 'fail', 'message': '로그인이 필요합니다.'}), 401
+
+    # 자바스크립트가 보낸 JSON 데이터 읽기
+    data = request.get_json()
+    score = data.get('score')
+    max_tile = data.get('max_tile')
+    username = session['username']
+    date = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    conn, cursor = get_db()
+    cursor.execute(
+        'insert into scores (username, score, max_tile, date) values (?, ?, ?, ?)',
+        (username, score, max_tile, date)
+    )
+    conn.commit()
+    conn.close()
+
+    return jsonify({'result': 'success', 'best_score': score})
+
+
+# --- [랭킹 시스템 화면] ---
+@app.route('/ranking/')
+def ranking():
+    if 'username' not in session:
+        return redirect('/login/')
+
+    conn, cursor = get_db()
+
+    # 유저별로 가장 높은 점수(MAX)를 기준으로 내림차순 정렬하여 상위 10명 추출
+    cursor.execute('''
+        select username, max(score) as max_score, max(max_tile) 
+        from scores 
+        group by username 
+        order by max_score desc 
+        limit 10
+    ''')
+    rankings = cursor.fetchall()
+    conn.close()
+
+    # 제공해주신 코드의 'HTML 문자열 조립 방식' 스타일을 적용
+    rankList = ''
+    rank_num = 1
+    for row in rankings:
+        rankList += f'''
+        <tr>
+            <td>{rank_num}등</td>
+            <td>{row[0]}</td>
+            <td>{row[1]}점</td>
+            <td>{row[2]} 블록</td>
+        </tr>
+        '''
+        rank_num += 1
+
+    return render_template('ranking.html', rankList=rankList)
+
+
+# --- [회원가입 / 로그인 / 로그아웃] (제공해주신 코드 원형 100% 유지) ---
+@app.route('/register/', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        conn, cursor = get_db()
+        cursor.execute('select * from users where username = ?', (username,))
+        user = cursor.fetchone()
+        if user:
+            conn.close()
+            return render_template('register.html', error='이미 존재하는 아이디입니다.', success='')
+        cursor.execute(
+            'insert into users (username, password) values (?, ?)',
+            (username, password)
+        )
+        conn.commit()
+        conn.close()
+
+        session['username'] = username
+        return render_template('register.html', error='', success='회원가입에 성공했습니다.')
+    return render_template('register.html', error='', success='')
+
+
+@app.route('/login/', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        conn, cursor = get_db()
+        cursor.execute('select * from users where username = ? and password = ?', (username, password))
+        user = cursor.fetchone()
+        conn.close()
+        if user:
+            session['username'] = user[1]
+            session['role'] = user[3]
+
+            if user[3] == 'admin':
+                return redirect('/admin/')
+            else:
+                return redirect('/')
+        else:
+            return render_template('login.html', error='아이디 혹은 비밀번호가 일치하지 않습니다.')
+
+    return render_template('login.html', error='')
+
+
+@app.route('/logout/')
+def logout():
+    session.pop('username', None)
+    return redirect('/')
+
+
+# --- [관리자 전용 대시보드] (기존 구조를 점수 관리용으로 응용) ---
+@app.route('/admin/')
+def admin():
+    if 'username' not in session:
+        return redirect('/login/')
+    if session.get('role') != 'admin':
+        return redirect('/')
+
+    conn, cursor = get_db()
+    cursor.execute('select * from users')
+    users = cursor.fetchall()
+
+    # 관리자가 모든 유저의 게임 기록 점수 현황을 감시/관리할 수 있게 수정
+    cursor.execute('select * from scores order by id desc')
+    scores = cursor.fetchall()
+
+    cursor.execute('select count(*) from users')
+    userCount = cursor.fetchone()[0]
+    cursor.execute('select count(*) from scores')
+    scoreCount = cursor.fetchone()[0]
+    conn.close()
+
+    return render_template('admin.html',
+                           users=users,
+                           scores=scores,
+                           userCount=userCount,
+                           scoreCount=scoreCount)
+
+
+# 어드민 전용 유저 삭제 (유지)
+@app.route('/admin/delete/<id>/')
+def admin_delete(id):
+    if session.get('role') != 'admin':
+        return redirect('/')
+    conn, cursor = get_db()
+    cursor.execute('delete from users where id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/admin/')
+
+
+# 어드민 전용 권한 변경 (유지)
+@app.route('/admin/role/<id>/')
+def admin_role(id):
+    if session.get('role') != 'admin':
+        return redirect('/')
+    conn, cursor = get_db()
+    cursor.execute('select role from users where id = ?', (id,))
+    user = cursor.fetchone()
+    if user[0] == 'user':
+        newRole = 'admin'
+    else:
+        newRole = 'user'
+    cursor.execute('update users set role = ? where id=?', (newRole, id))
+    conn.commit()
+    conn.close()
+    return redirect('/admin/')
+
+
+# 어드민 전용 부적절한 점수 기록 삭제 추가 (기존 admin_post_delete 연동)
+@app.route('/admin/score/delete/<id>/')
+def admin_score_delete(id):
+    if session.get('role') != 'admin':
+        return redirect('/')
+    conn, cursor = get_db()
+    cursor.execute('delete from scores where id = ?', (id,))
+    conn.commit()
+    conn.close()
+    return redirect('/admin/')
+
+
+
+#app.run(debug=True)
+import os
+
+if __name__ == '__main__':
+    # 서버 환경에서 지정해주는 포트를 사용하고, 없으면 5000번을 씁니다.
+    port = int(os.environ.get("PORT", 5000))
+    # 외부 접근이 가능하도록 호스트를 0.0.0.0으로 개방합니다.
+    app.run(host='0.0.0.0', port=port)
