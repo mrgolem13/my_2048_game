@@ -1,5 +1,14 @@
-// 자바스크립트 게임오버 처리 함수 내부 예시
+// 💡 함수 외부(전역 공간)에 게임오버 처리 상태를 기억할 변수를 선언합니다.
+let isGameOverProcessing = false;
+
 function gameOver(finalScore, highestTile) {
+    // 💡 [핵심] 이미 게임오버 처리가 진행 중이라면, 중복 호출을 무시하고 즉시 함수를 탈출합니다!
+    if (isGameOverProcessing) return;
+
+    // 함수가 처음 실행되면 플래그를 true로 바꾸어 문을 잠급니다.
+    isGameOverProcessing = true;
+
+    // 이제 이 알림창은 절대로 중복해서 2번 뜨지 않습니다.
     alert("게임 오버! 당신의 점수: " + finalScore);
 
     // Flask 서버의 /save_score/ 주소로 데이터 전송 (비동기 Fetch API 사용)
@@ -21,7 +30,17 @@ function gameOver(finalScore, highestTile) {
             window.location.href = '/ranking/';
         }
     })
-    .catch(err => console.error("점수 전송 중 오류 발생:", err));
+    .catch(err => {
+        console.error("점수 전송 중 오류 발생:", err);
+        // 에러가 나서 페이지 이동을 안 할 경우를 대비해, 다시 게임할 수 있도록 플래그를 풀어줍니다.
+        isGameOverProcessing = false;
+    });
+}
+
+// 💡 만약 게임을 리스타트(다시 시작)하는 함수가 있다면, 그 함수 내부에서 아래와 같이 초기화해 주어야 합니다!
+function restartGame() {
+    isGameOverProcessing = false; // 새 게임 시작 시 다시 플래그를 풀어줌
+    // ... 기존 리스타트 로직들
 }
 
 class Game2048 {
