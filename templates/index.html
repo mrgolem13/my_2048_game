@@ -5,7 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 웹 게임</title>
     <style>
-        /* [개선 1] 전체 화면 중앙 정렬 인프라 */
+        /* ==========================================================================
+           1. 전체 레이아웃 및 화면 중앙 정렬
+           ========================================================================== */
         body {
             font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
             background-color: #faf8ef;
@@ -14,16 +16,17 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            align-items: center; /* 수평 중앙 정렬 */
+            align-items: center; /* 화면 수평 중앙 정렬 */
         }
 
-        /* 중앙 집중형 메인 컨테이너 */
+        /* 중앙 집중형 메인 가이드 박스 */
         .game-wrapper {
             width: 400px;
             margin: 0 auto;
             position: relative;
         }
 
+        /* 상단 네비게이션 및 헤더 */
         .header {
             display: flex;
             justify-content: space-between;
@@ -33,37 +36,92 @@
 
         .title { font-size: 48px; font-weight: bold; margin: 0; }
 
-        .nav-buttons { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: flex-end; }
-        .btn { background: #8f7a66; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .nav-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            width: 100%;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            background: #8f7a66;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
         .btn:hover { background: #776e65; }
 
-        /* [개선 3] 어드민 이동기 전용 스타일 */
+        /* 어드민 상시 이동 전용 스타일 (시각적 효과 추가) */
         .btn-admin { background: #e74c3c; animation: pulse 2s infinite; }
         .btn-admin:hover { background: #c0392b; }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
 
+        /* 점수 표기 판 */
         .score-container { display: flex; gap: 10px; }
         .score-box { background: #bbada0; color: white; min-width: 75px; padding: 5px 15px; text-align: center; border-radius: 3px; font-weight: bold; }
         .score-box .label { display: block; font-size: 10px; color: #eee; }
         .score-box .value { font-size: 18px; }
 
-        /* [개선 1] 우측 쏠림 현상 방지를 위해 여백을 초기화한 절대 정렬 격자판 */
+        /* ==========================================================================
+           2. [수정] 쏠림 현상이 해결된 정대칭 2048 게임 보드판 공간
+           ========================================================================== */
         #game-container {
             width: 400px;
             height: 400px;
             background: #bbada0;
             border-radius: 6px;
             position: relative;
-            padding: 15px;
+            padding: 15px;            /* 상하좌우 내부 여백 15px 통일 */
             box-sizing: border-box;
             margin: 0 auto 15px auto;
         }
-        .grid-row { display: flex; margin-bottom: 15px; }
-        .grid-row:last-child { margin-bottom: 0; }
-        .grid-cell { width: 73px; height: 73px; margin-right: 15px; background: rgba(238, 228, 218, 0.35); border-radius: 3px; }
-        .grid-cell:last-child { margin-right: 0; }
 
-        .tile { width: 73px; height: 73px; line-height: 73px; font-size: 35px; font-weight: bold; text-align: center; position: absolute; border-radius: 3px; z-index: 10; transition: top 0.1s ease-in-out, left 0.1s ease-in-out; }
+        /* 세로 격자 한 줄 */
+        .grid-row {
+            display: flex;
+            margin-bottom: 15px;      /* 줄과 줄 사이 간격 15px */
+        }
+        .grid-row:last-child {
+            margin-bottom: 0;         /* 맨 아랫줄 여백 제외 */
+        }
+
+        /* 가로 격자 한 칸 (수학적 대칭 크기: 71.25px) */
+        .grid-cell {
+            width: 71.25px;
+            height: 71.25px;
+            margin-right: 15px;       /* 칸과 칸 사이 간격 15px */
+            background: rgba(238, 228, 218, 0.35);
+            border-radius: 3px;
+        }
+        .grid-cell:last-child {
+            margin-right: 0;          /* 맨 오른쪽 칸 여백 제외 */
+        }
+
+        /* 실제 렌더링되어 움직이는 인게임 숫자 타일 */
+        .tile {
+            width: 71.25px;           /* 배경 grid-cell 크기와 1:1 완벽 일치 */
+            height: 71.25px;
+            line-height: 71.25px;     /* 내부 숫자가 정중앙에 수직 정렬되도록 조정 */
+            font-size: 35px;
+            font-weight: bold;
+            text-align: center;
+            position: absolute;
+            border-radius: 3px;
+            z-index: 10;
+            transition: top 0.1s ease-in-out, left 0.1s ease-in-out;
+        }
+
+        /* 각 숫자 블록별 배경색 정의 */
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
         .tile-8 { background: #f2b179; color: white; }
@@ -76,16 +134,27 @@
         .tile-1024 { background: #edc53f; color: white; font-size: 22px; }
         .tile-2048 { background: #edc22e; color: white; font-size: 22px; }
 
-        /* [개선 2] 모달 팝업창 레이아웃 CSS */
+        /* ==========================================================================
+           3. 실시간 랭킹보기 전용 모달(Modal) 팝업창 레이아웃
+           ========================================================================== */
         .modal-overlay {
-            display: none; /* 기본 상태는 숨김 */
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.5); z-index: 100;
-            justify-content: center; align-items: center;
+            display: none;            /* 평소에는 화면에서 완전히 숨김 */
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 100;
+            justify-content: center;
+            align-items: center;
         }
         .modal-content {
-            background: white; padding: 25px; border-radius: 8px;
-            width: 360px; max-height: 80vh; overflow-y: auto; text-align: center;
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            width: 360px;
+            max-height: 80vh;
+            overflow-y: auto;
+            text-align: center;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: #776e65; }
@@ -101,6 +170,7 @@
             {% if role == 'admin' %}
             <a href="/admin/" class="btn btn-admin">⚙️ 관리자 대시보드</a>
             {% endif %}
+
             <button class="btn" onclick="openRankingModal()">🏆 랭킹보기</button>
             <a href="/logout/" class="btn" style="background:#e67e22;">로그아웃</a>
         </div>
@@ -127,6 +197,7 @@
         </div>
 
         <p style="text-align: center; font-size: 14px; font-weight: bold;">플레이어: <span style="color:#e67e22;">{{ username }}</span>님 로그인 중</p>
+        <p style="text-align: center; font-size: 12px; color: #999; margin-top: -5px;">방향키(←, ↑, →, ↓)를 움직여 타일을 합치세요!</p>
     </div>
 
     <div id="rankingModal" class="modal-overlay" onclick="closeRankingModal()">
@@ -152,35 +223,36 @@
 
     <script>
         function openRankingModal() {
-            // 게임 진행 도중 방향키 가로채기 방지 및 데이터 비동기 호출
+            // 게임 도중 링크 이동 없이 백엔드 점수 데이터를 비동기 fetch 호출합니다.
             fetch('/api/ranking/')
                 .then(response => response.json())
                 .then(data => {
                     if (data.result === 'success') {
                         const listBody = document.getElementById('modalRankList');
-                        listBody.innerHTML = ''; // 기존 리스트 리셋
+                        listBody.innerHTML = ''; // 이전 바인딩 기록 데이터 비우기
 
                         if (data.rankings.length === 0) {
-                            listBody.innerHTML = "<tr><td colspan='4'>기록이 없습니다.</td></tr>";
+                            listBody.innerHTML = "<tr><td colspan='4'>등록된 랭킹 기록이 없습니다.</td></tr>";
                         } else {
                             data.rankings.forEach(item => {
                                 const row = `<tr>
                                     <td>${item.rank}등</td>
                                     <td>${item.username}</td>
-                                    <td>${item.score}점</td>
+                                    <td>${item.score.toLocaleString()}점</td>
                                     <td>${item.max_tile} 블록</td>
                                 </tr>`;
                                 listBody.innerHTML += row;
                             });
                         }
-                        // 모달 디스플레이 켜기
+                        // 모달 오버레이 레이어를 화면에 노출 (flex 정렬)
                         document.getElementById('rankingModal').style.display = 'flex';
                     }
                 })
-                .catch(err => console.error("랭킹 로드 오류:", err));
+                .catch(err => console.error("랭킹 데이터 비동기 파싱 에러:", err));
         }
 
         function closeRankingModal() {
+            // 팝업 숨기기
             document.getElementById('rankingModal').style.display = 'none';
         }
     </script>
