@@ -2,47 +2,68 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2048 웹 게임</title>
     <style>
-        body { font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif; background-color: #faf8ef; color: #776e65; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-        .header { width: 400px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .user-info { font-size: 16px; font-weight: bold; }
-        .nav-links a { margin-left: 10px; color: #8f7a66; font-weight: bold; text-decoration: none; }
-        .score-container { display: flex; gap: 10px; margin-bottom: 20px; }
-        .score-box { background: #bbada0; color: white; min-width: 80px; padding: 5px 10px; text-align: center; border-radius: 3px; font-weight: bold; }
-        .score-box .label { display: block; font-size: 11px; color: #eee; text-transform: uppercase; }
-        .score-box .value { font-size: 20px; }
-        /* 4x4 게임판 */
-        #game-container { width: 400px; height: 400px; background: #bbada0; border-radius: 6px; position: relative; padding: 15px; box-sizing: border-box; }
+        /* [개선 1] 전체 화면 중앙 정렬 인프라 */
+        body {
+            font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+            background-color: #faf8ef;
+            color: #776e65;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* 수평 중앙 정렬 */
+        }
+
+        /* 중앙 집중형 메인 컨테이너 */
+        .game-wrapper {
+            width: 400px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .title { font-size: 48px; font-weight: bold; margin: 0; }
+
+        .nav-buttons { display: flex; gap: 8px; margin-bottom: 15px; width: 100%; justify-content: flex-end; }
+        .btn { background: #8f7a66; color: white; border: none; padding: 8px 15px; border-radius: 5px; font-weight: bold; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .btn:hover { background: #776e65; }
+
+        /* [개선 3] 어드민 이동기 전용 스타일 */
+        .btn-admin { background: #e74c3c; animation: pulse 2s infinite; }
+        .btn-admin:hover { background: #c0392b; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        .score-container { display: flex; gap: 10px; }
+        .score-box { background: #bbada0; color: white; min-width: 75px; padding: 5px 15px; text-align: center; border-radius: 3px; font-weight: bold; }
+        .score-box .label { display: block; font-size: 10px; color: #eee; }
+        .score-box .value { font-size: 18px; }
+
+        /* [개선 1] 우측 쏠림 현상 방지를 위해 여백을 초기화한 절대 정렬 격자판 */
+        #game-container {
+            width: 400px;
+            height: 400px;
+            background: #bbada0;
+            border-radius: 6px;
+            position: relative;
+            padding: 15px;
+            box-sizing: border-box;
+            margin: 0 auto 15px auto;
+        }
         .grid-row { display: flex; margin-bottom: 15px; }
         .grid-row:last-child { margin-bottom: 0; }
         .grid-cell { width: 73px; height: 73px; margin-right: 15px; background: rgba(238, 228, 218, 0.35); border-radius: 3px; }
         .grid-cell:last-child { margin-right: 0; }
-        /* templates/index.html 의 <style> 내부에 추가 */
 
-        /* 생성되는 숫자 패널의 공통 디자인 */
-        .tile {
-        width: 73px;
-        height: 73px;
-        line-height: 73px;
-        font-size: 35px;
-        font-weight: bold;
-        text-align: center;
-        position: absolute;
-        border-radius: 3px;
-        z-index: 10;
-
-        transition: top 0.1s ease-in-out, left o.1s ease-in-out;
-    }
-    @keyframes pop {
-        0% { transform: scale(0); }
-        100% { transform: scale(1); }
-    }
-    .tile-new {
-        animation: pop 0.15s ease-in-out;
-    }
-
-        /* 숫자별 배경색 및 글자색 지정 (2048 고유 디자인) */
+        .tile { width: 73px; height: 73px; line-height: 73px; font-size: 35px; font-weight: bold; text-align: center; position: absolute; border-radius: 3px; z-index: 10; transition: top 0.1s ease-in-out, left 0.1s ease-in-out; }
         .tile-2 { background: #eee4da; color: #776e65; }
         .tile-4 { background: #ede0c8; color: #776e65; }
         .tile-8 { background: #f2b179; color: white; }
@@ -54,46 +75,114 @@
         .tile-512 { background: #edc850; color: white; font-size: 30px; }
         .tile-1024 { background: #edc53f; color: white; font-size: 22px; }
         .tile-2048 { background: #edc22e; color: white; font-size: 22px; }
+
+        /* [개선 2] 모달 팝업창 레이아웃 CSS */
+        .modal-overlay {
+            display: none; /* 기본 상태는 숨김 */
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5); z-index: 100;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: white; padding: 25px; border-radius: 8px;
+            width: 360px; max-height: 80vh; overflow-y: auto; text-align: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .modal-title { font-size: 24px; font-weight: bold; margin-bottom: 15px; color: #776e65; }
+        .ranking-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .ranking-table th, .ranking-table td { padding: 10px; border-bottom: 1px solid #eee; font-size: 14px; }
+        .ranking-table th { background: #bbada0; color: white; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <div class="user-info">👤 {{ username }} 님</div>
-        <div class="nav-links">
-            <a href="/ranking/">🏆 랭킹 보기</a>
-            <a href="/logout/" style="color: #f44336;">로그아웃</a>
+    <div class="game-wrapper">
+        <div class="nav-buttons">
+            {% if role == 'admin' %}
+            <a href="/admin/" class="btn btn-admin">⚙️ 관리자 대시보드</a>
+            {% endif %}
+            <button class="btn" onclick="openRankingModal()">🏆 랭킹보기</button>
+            <a href="/logout/" class="btn" style="background:#e67e22;">로그아웃</a>
+        </div>
+
+        <div class="header">
+            <h1 class="title">2048</h1>
+            <div class="score-container">
+                <div class="score-box">
+                    <span class="label">SCORE</span>
+                    <span class="value" id="current-score">0</span>
+                </div>
+                <div class="score-box">
+                    <span class="label">BEST</span>
+                    <span class="value" id="best-score">{{ best_score }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="game-container">
+            <div class="grid-row"><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div></div>
+            <div class="grid-row"><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div></div>
+            <div class="grid-row"><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div></div>
+            <div class="grid-row"><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div></div>
+        </div>
+
+        <p style="text-align: center; font-size: 14px; font-weight: bold;">플레이어: <span style="color:#e67e22;">{{ username }}</span>님 로그인 중</p>
+    </div>
+
+    <div id="rankingModal" class="modal-overlay" onclick="closeRankingModal()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <div class="modal-title">🏆 실시간 명예의 전당</div>
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>순위</th>
+                        <th>아이디</th>
+                        <th>최고 점수</th>
+                        <th>블록</th>
+                    </tr>
+                </thead>
+                <tbody id="modalRankList">
+                    </tbody>
+            </table>
+            <button class="btn" onclick="closeRankingModal()" style="width: 100%;">게임으로 돌아가기</button>
         </div>
     </div>
 
-    <div class="score-container">
-        <div class="score-box">
-            <span class="label">SCORE</span>
-            <span class="value" id="current-score">0</span>
-        </div>
-        <div class="score-box">
-            <span class="label">BEST RECORD</span>
-            <span class="value">{{ best_score }}</span>
-        </div>
-    </div>
+    <script src="/static/js/game.js"></script>
 
-    <div id="game-container">
-        <div class="grid-row">
-            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
-        </div>
-        <div class="grid-row">
-            <div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div><div class="grid-cell"></div>
-        </div>
-    </div>
+    <script>
+        function openRankingModal() {
+            // 게임 진행 도중 방향키 가로채기 방지 및 데이터 비동기 호출
+            fetch('/api/ranking/')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.result === 'success') {
+                        const listBody = document.getElementById('modalRankList');
+                        listBody.innerHTML = ''; // 기존 리스트 리셋
 
-    <p style="margin-top: 20px; font-size: 14px;">방향키(←, ↑, →, ↓)를 움직여 타일을 합치세요!</p>
+                        if (data.rankings.length === 0) {
+                            listBody.innerHTML = "<tr><td colspan='4'>기록이 없습니다.</td></tr>";
+                        } else {
+                            data.rankings.forEach(item => {
+                                const row = `<tr>
+                                    <td>${item.rank}등</td>
+                                    <td>${item.username}</td>
+                                    <td>${item.score}점</td>
+                                    <td>${item.max_tile} 블록</td>
+                                </tr>`;
+                                listBody.innerHTML += row;
+                            });
+                        }
+                        // 모달 디스플레이 켜기
+                        document.getElementById('rankingModal').style.display = 'flex';
+                    }
+                })
+                .catch(err => console.error("랭킹 로드 오류:", err));
+        }
 
-    <script src="{{ url_for('static', filename='js/game.js') }}"></script>
+        function closeRankingModal() {
+            document.getElementById('rankingModal').style.display = 'none';
+        }
+    </script>
 </body>
 </html>
