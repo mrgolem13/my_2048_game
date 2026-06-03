@@ -1,39 +1,31 @@
-// 💡 함수 외부(전역 공간)에 게임오버 처리 상태를 기억할 변수를 선언합니다.
-let isGameOverProcessing = false;
+// ====== [game.js 파일의 최상단 공간] ======
+// 그 어떤 함수에도 속하지 않는 파일 맨 위에 선언해야 안전합니다!
+if (typeof window.isGameOverProcessing === 'undefined') {
+    window.isGameOverProcessing = false;
+}
 
 function gameOver(finalScore, highestTile) {
-    // 💡 [핵심] 이미 게임오버 처리가 진행 중이라면, 중복 호출을 무시하고 즉시 함수를 탈출합니다!
-    if (isGameOverProcessing) return;
+    // 전역 윈도우 객체에 고정하여 중복 차단 효과를 극대화합니다.
+    if (window.isGameOverProcessing) return;
+    window.isGameOverProcessing = true;
 
-    // 함수가 처음 실행되면 플래그를 true로 바꾸어 문을 잠급니다.
-    isGameOverProcessing = true;
-
-    // 이제 이 알림창은 절대로 중복해서 2번 뜨지 않습니다.
     alert("게임 오버! 당신의 점수: " + finalScore);
 
-    // Flask 서버의 /save_score/ 주소로 데이터 전송 (비동기 Fetch API 사용)
     fetch('/save_score/', {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            score: finalScore,      // 예: 2048
-            max_tile: highestTile   // 예: 256
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ score: finalScore, max_tile: highestTile })
     })
     .then(response => response.json())
     .then(data => {
         if(data.result === 'success') {
             console.log("DB에 점수가 성공적으로 기록되었습니다.");
-            // 필요시 랭킹 페이지로 리다이렉트
             window.location.href = '/ranking/';
         }
     })
     .catch(err => {
-        console.error("점수 전송 중 오류 발생:", err);
-        // 에러가 나서 페이지 이동을 안 할 경우를 대비해, 다시 게임할 수 있도록 플래그를 풀어줍니다.
-        isGameOverProcessing = false;
+        console.error("오류 발생:", err);
+        window.isGameOverProcessing = false;
     });
 }
 
