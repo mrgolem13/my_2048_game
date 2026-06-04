@@ -1,12 +1,13 @@
 /* 🎮 게임 보드판 배경 큰 네모칸 */
 #game-container {
     position: relative !important;
-    width: 499px !important;       /* 📐 무조건 이 크기로 강제 고정 */
-    height: 499px !important;      /* 📐 무조건 이 크기로 강제 고정 */
+    width: 375px !important;       /* 📐 무조건 이 크기로 강제 고정 */
+    height: 375px !important;      /* 📐 무조건 이 크기로 강제 고정 */
     background-color: #bbada0 !important;
     border-radius: 6px !important;
     padding: 15px !important;
     box-sizing: border-box !important;
+    margin: 0 auto !important;
 }
 
 /* 🧱 실제 움직이는 숫자 타일 개별 속성 */
