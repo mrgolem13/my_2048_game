@@ -5,6 +5,13 @@ if (typeof window.isGameOverProcessing === 'undefined') {
     window.isGameOverProcessing = false;
 }
 
+// ==========================================================================
+// 📐 [수정] 2048 게임판 정대칭 레이아웃을 위한 물리 상수 정의
+// ==========================================================================
+const GRID_GAP = 15;        // 테두리 및 격자 사이의 여백 (15px)
+const TILE_SIZE = 106;      // 숫자 타일 하나의 순수 가로/세로 크기 (106px)
+const CELL_STEP = TILE_SIZE + GRID_GAP; // 한 칸 이동할 때의 총 거리 (121px)
+
 class Game2048 {
     constructor() {
         this.board = Array(4).fill().map(() => Array(4).fill(0));
@@ -57,7 +64,7 @@ class Game2048 {
         }
     }
 
-    // 화면에 타일 태그를 물리적으로 만드는 함수
+    // 💡 [수정] 화면에 타일 태그를 물리적으로 만드는 함수 (정대칭 공식 적용)
     createTileDOM(r, c, value, tileId, isNew = false) {
         const container = document.getElementById('game-container');
         if (!container) return;
@@ -68,9 +75,9 @@ class Game2048 {
         tile.className = `tile tile-${value}` + (isNew ? ' tile-new' : '');
         tile.innerText = value;
 
-        // 📐 [치수 조정] HTML CSS 디자인 규격과 1:1 대칭 매칭 (71.25px + 15px = 86.25px)
-        tile.style.top = `${15 + r * 86.25}px`;
-        tile.style.left = `${15 + c * 86.25}px`;
+        // 📐 [정밀 보정] 상하좌우 여백을 시작점으로 삼고, 칸 수만큼 수식을 자동화하여 정중앙 안착
+        tile.style.top = `${GRID_GAP + r * CELL_STEP}px`;
+        tile.style.left = `${GRID_GAP + c * CELL_STEP}px`;
 
         container.appendChild(tile);
         this.tileElements[tileId] = tile;
@@ -78,7 +85,7 @@ class Game2048 {
 
     // 핵심: 이동 방향에 맞춰 타일의 top, left 값을 부드럽게 이동시키는 로직
     move(direction) {
-        // 💡 만약 게임오버 팝업이 뜨는 중이거나 이미 끝났다면 이동 연산을 원천 차단
+        // 만약 게임오버 팝업이 뜨는 중이거나 이미 끝났다면 이동 연산을 원천 차단
         if (window.isGameOverProcessing) return;
 
         let moved = false;
@@ -113,9 +120,9 @@ class Game2048 {
 
                     let dom = this.tileElements[mergedTile.id];
                     if (dom) {
-                        // 📐 [치수 조정] 86.25px 대칭 매칭
-                        dom.style.top = `${15 + finalR * 86.25}px`;
-                        dom.style.left = `${15 + finalC * 86.25}px`;
+                        // 📐 [수정] 합쳐지러 들어가는 타일의 애니메이션 좌표 정대칭 동기화
+                        dom.style.top = `${GRID_GAP + finalR * CELL_STEP}px`;
+                        dom.style.left = `${GRID_GAP + finalC * CELL_STEP}px`;
                         setTimeout(() => dom.remove(), 100);
                     }
 
@@ -134,9 +141,9 @@ class Game2048 {
 
                     let dom = this.tileElements[line[j].id];
                     if (dom) {
-                        // 📐 [치수 조정] 86.25px 대칭 매칭
-                        dom.style.top = `${15 + finalR * 86.25}px`;
-                        dom.style.left = `${15 + finalC * 86.25}px`;
+                        // 📐 [수정] 미끄러지는 타일의 애니메이션 좌표 정대칭 동기화
+                        dom.style.top = `${GRID_GAP + finalR * CELL_STEP}px`;
+                        dom.style.left = `${GRID_GAP + finalC * CELL_STEP}px`;
                     }
                     targetIdx++;
                 }
@@ -176,15 +183,13 @@ class Game2048 {
         }
     }
 
-    // 💡 [수정] 이벤트 리스너 중복 바인딩을 방지하는 안전 메커니즘
+    // 이벤트 리스너 중복 바인딩을 방지하는 안전 메커니즘
     setupInput() {
-        // 기존의 바인딩을 추적하기 위해 바인더 함수 명시화
         if (this.keydownBinder) {
             window.removeEventListener('keydown', this.keydownBinder);
         }
 
         this.keydownBinder = (e) => {
-            // 게임오버 처리 중에는 일체의 키보드 이벤트 작동을 정지
             if (window.isGameOverProcessing) return;
 
             if (e.key === 'ArrowLeft') this.move('left');
@@ -209,9 +214,8 @@ class Game2048 {
         return true;
     }
 
-    // 💡 [수정] 실질적인 게임오버 핸들러 메서드 내부에 차단 게이트 추가
+    // 실질적인 게임오버 핸들러 메서드 내부에 차단 게이트 추가
     handleGameOver() {
-        // 중복 진입 시 즉시 리턴하여 차단 (더블 팝업 방어선)
         if (window.isGameOverProcessing) return;
         window.isGameOverProcessing = true;
 
@@ -224,7 +228,6 @@ class Game2048 {
             }
         }
 
-        // 알림창 출력 및 백엔드 전송
         alert(`게임 오버! 최종 점수: ${this.score}점`);
 
         fetch('/save_score/', {

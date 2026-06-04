@@ -1,0 +1,17 @@
+#game-container {
+    position: relative;
+    width: 499px;          /* 📐 여백 5칸(75px) + 타일 4칸(424px) = 499px */
+    height: 499px;         /* 📐 세로 크기도 완벽히 대칭 매칭 */
+    background-color: #bbada0;
+    border-radius: 6px;
+    padding: 15px;         /* JS의 GRID_GAP 상수와 1:1 대응 */
+    box-sizing: border-box;
+}
+
+.tile {
+    position: absolute;
+    width: 106px;          /* JS의 TILE_SIZE 상수와 1:1 대응 */
+    height: 106px;         /* JS의 TILE_SIZE 상수와 1:1 대응 */
+    border-radius: 3px;
+    transition: top 100ms ease-in-out, left 100ms ease-in-out;
+}
