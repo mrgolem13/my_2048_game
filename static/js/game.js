@@ -47,7 +47,7 @@ class Game2048 {
         }
     }
 
-    // 💡 [정밀 보정] 기존 HTML 격자 레이아웃에 1:1로 포개어지도록 좌표 수식 고정
+    // 💡 [여백 대칭 정밀 보정] 우측 및 하단 빈 공간의 균형을 맞추기 위해 시작 오프셋 및 간격 조정
     createTileDOM(r, c, value, tileId, isNew = false) {
         const container = document.getElementById('game-container');
         if (!container) return;
@@ -57,9 +57,10 @@ class Game2048 {
         tile.className = `tile tile-${value}` + (isNew ? ' tile-new' : '');
         tile.innerText = value;
 
-        // 화면 격자에 자석처럼 달라붙도록 기존 대칭 오프셋 공식(15 + 86.25) 적용
-        tile.style.top = `${15 + r * 86.25}px`;
-        tile.style.left = `${15 + c * 86.25}px`;
+        // 📐 기존 15px 시작점에서 각각 우측(X)으로 +12px, 하단(Y)으로 +23px만큼 이동 타겟을 밀어주어
+        // 겉도는 배경 격자 무늬의 중앙 레이어에 완벽히 포개어지도록 강제 보정합니다.
+        tile.style.top = `${38 + r * 86.25}px`;
+        tile.style.left = `${27 + c * 86.25}px`;
 
         container.appendChild(tile);
         this.tileElements[tileId] = tile;
@@ -98,8 +99,9 @@ class Game2048 {
 
                     let dom = this.tileElements[mergedTile.id];
                     if (dom) {
-                        dom.style.top = `${15 + finalR * 86.25}px`;
-                        dom.style.left = `${15 + finalC * 86.25}px`;
+                        // 📐 이동 및 합성 애니메이션 좌표 정밀 보정 동기화
+                        dom.style.top = `${38 + finalR * 86.25}px`;
+                        dom.style.left = `${27 + finalC * 86.25}px`;
                         setTimeout(() => dom.remove(), 100);
                     }
 
@@ -117,8 +119,9 @@ class Game2048 {
 
                     let dom = this.tileElements[line[j].id];
                     if (dom) {
-                        dom.style.top = `${15 + finalR * 86.25}px`;
-                        dom.style.left = `${15 + finalC * 86.25}px`;
+                        // 📐 이동 및 슬라이딩 애니메이션 좌표 정밀 보정 동기화
+                        dom.style.top = `${38 + finalR * 86.25}px`;
+                        dom.style.left = `${27 + finalC * 86.25}px`;
                     }
                     targetIdx++;
                 }
