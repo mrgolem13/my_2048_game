@@ -1,31 +1,38 @@
-/* 🎮 게임 보드판 배경 큰 네모칸 */
+/* 🎮 게임 보드판 배경 큰 네모칸 - 상하좌우 15px 완전 대칭 고정 */
 #game-container {
     position: relative !important;
-    width: 375px !important;       /* 📐 무조건 이 크기로 강제 고정 */
-    height: 375px !important;      /* 📐 무조건 이 크기로 강제 고정 */
+    width: 499px !important;       /* 📐 여백 5칸(75px) + 타일 4칸(424px) = 499px 정대칭 */
+    height: 499px !important;      /* 📐 가로세로 비율 1:1 정방형 매칭 */
     background-color: #bbada0 !important;
     border-radius: 6px !important;
+
+    /* 💡 [핵심] 상하좌우 내부 여백을 15px로 균일하게 가두어 자바스크립트 공식과 동기화 */
     padding: 15px !important;
     box-sizing: border-box !important;
-    margin: 0 auto !important;
+
+    margin: 0 auto !important;     /* 웹 페이지 중앙 정렬 */
 }
 
 /* 🧱 실제 움직이는 숫자 타일 개별 속성 */
 .tile {
     position: absolute !important;
-    width: 106px !important;       /* 📐 무조건 타일 크기를 106px로 강제 고정 */
-    height: 106px !important;      /* 📐 무조건 타일 크기를 106px로 강제 고정 */
+    width: 106px !important;       /* 타일 자체 가로 크기 */
+    height: 106px !important;      /* 타일 자체 세로 크기 */
     border-radius: 4px !important;
+
+    /* 부드러운 타일 슬라이딩 애니메이션 속도 */
     transition: top 100ms ease-in-out, left 100ms ease-in-out !important;
 
+    /* 숫자 텍스트 정중앙 정렬 */
     display: flex !important;
     justify-content: center !important;
     align-items: center !important;
     font-weight: bold !important;
     font-size: 38px !important;
+    color: #776e65 !important;
 }
 
-/* 🔲 배경에 깔려있는 16개의 빈 칸 격자 (이 부분도 반드시 확인해야 합니다!) */
+/* 🔲 배경에 깔려있는 16개의 빈 칸 격자 규격 동기화 */
 .grid-cell {
     width: 106px !important;
     height: 106px !important;

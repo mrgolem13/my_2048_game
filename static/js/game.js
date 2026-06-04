@@ -59,8 +59,8 @@ class Game2048 {
 
         // 📐 기존 15px 시작점에서 각각 우측(X)으로 +12px, 하단(Y)으로 +23px만큼 이동 타겟을 밀어주어
         // 겉도는 배경 격자 무늬의 중앙 레이어에 완벽히 포개어지도록 강제 보정합니다.
-        tile.style.top = `${38 + r * 86.25}px`;
-        tile.style.left = `${27 + c * 86.25}px`;
+        tile.style.top = `${15 + r * 86.25}px`;
+        tile.style.left = `${15 + c * 86.25}px`;
 
         container.appendChild(tile);
         this.tileElements[tileId] = tile;
@@ -100,8 +100,8 @@ class Game2048 {
                     let dom = this.tileElements[mergedTile.id];
                     if (dom) {
                         // 📐 이동 및 합성 애니메이션 좌표 정밀 보정 동기화
-                        dom.style.top = `${38 + finalR * 86.25}px`;
-                        dom.style.left = `${27 + finalC * 86.25}px`;
+                        dom.style.top = `${15 + finalR * 86.25}px`;
+                        dom.style.left = `${15 + finalC * 86.25}px`;
                         setTimeout(() => dom.remove(), 100);
                     }
 
@@ -120,8 +120,8 @@ class Game2048 {
                     let dom = this.tileElements[line[j].id];
                     if (dom) {
                         // 📐 이동 및 슬라이딩 애니메이션 좌표 정밀 보정 동기화
-                        dom.style.top = `${38 + finalR * 86.25}px`;
-                        dom.style.left = `${27 + finalC * 86.25}px`;
+                        dom.style.top = `${15 + finalR * 86.25}px`;
+                        dom.style.left = `${15 + finalC * 86.25}px`;
                     }
                     targetIdx++;
                 }
