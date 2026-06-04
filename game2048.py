@@ -1,15 +1,18 @@
 from flask import Flask, request, redirect, render_template, session, jsonify
 import sqlite3
-from datetime import datetime
+# 💡 [수정] 대한민국 시간(KST) 처리를 위해 timezone과 timedelta를 반드시 임포트해야 합니다.
+from datetime import datetime, timezone, timedelta
 import os
 
 app = Flask(__name__)
 app.secret_key = '12345'  # 기존 시크릿 키 유지
 
+
 def get_db():
     conn = sqlite3.connect('game2048.db')
     cursor = conn.cursor()
     return conn, cursor
+
 
 def init_db():
     conn, cursor = get_db()
@@ -39,7 +42,9 @@ def init_db():
     conn.commit()
     conn.close()
 
+
 init_db()
+
 
 @app.route('/')
 def index():
@@ -47,7 +52,7 @@ def index():
         return redirect('/login/')
 
     current_user = session['username']
-    current_role = session.get('role', 'user')  # 💡 관리자 여부 확인용 세션 추출
+    current_role = session.get('role', 'user')  # 관리자 여부 확인용 세션 추출
 
     conn, cursor = get_db()
     cursor.execute('select max(score) from scores where username = ?', (current_user,))
@@ -56,8 +61,9 @@ def index():
         best_score = 0
     conn.close()
 
-    # 💡 index.html로 role(권한) 정보도 함께 넘겨줍니다.
+    # index.html로 role(권한) 정보도 함께 넘겨줍니다.
     return render_template('index.html', username=current_user, best_score=best_score, role=current_role)
+
 
 @app.route('/save_score/', methods=['POST'])
 def save_score():
@@ -68,19 +74,30 @@ def save_score():
     score = data.get('score')
     max_tile = data.get('max_tile')
     username = session['username']
-    date = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    # 💡 [보정] 글로벌 클라우드 서버 인프라에서도 한국 표준시(KST)로 정확하게 찍히도록 타임존 맵핑
+    kst_timezone = timezone(timedelta(hours=9))
+    date = datetime.now(kst_timezone).strftime('%Y-%m-%d %H:%M')
 
     conn, cursor = get_db()
+    # 현재 도달한 점수 데이터베이스 기록
     cursor.execute(
         'insert into scores (username, score, max_tile, date) values (?, ?, ?, ?)',
         (username, score, max_tile, date)
     )
     conn.commit()
+
+    # 💡 [개선] 현재 유저의 역대 '최고 점수'를 다시 계산하여 응답창에 실시간으로 반환합니다.
+    cursor.execute('select max(score) from scores where username = ?', (username,))
+    best_score_row = cursor.fetchone()
+    best_score = best_score_row[0] if best_score_row and best_score_row[0] is not None else score
+
     conn.close()
 
-    return jsonify({'result': 'success', 'best_score': score})
+    return jsonify({'result': 'success', 'best_score': best_score})
 
-# 💡 [기능 개선 2] 팝업창에 데이터를 비동기로 쏴줄 JSON용 랭킹 API 추가
+
+# 팝업창에 데이터를 비동기로 쏴줄 JSON용 랭킹 API
 @app.route('/api/ranking/')
 def api_ranking():
     if 'username' not in session:
@@ -107,6 +124,7 @@ def api_ranking():
         })
     return jsonify({'result': 'success', 'rankings': rank_data})
 
+
 # 기존 HTML 통째로 반환하는 라우트도 호환성을 위해 유지
 @app.route('/ranking/')
 def ranking():
@@ -130,6 +148,7 @@ def ranking():
         rank_num += 1
     return render_template('ranking.html', rankList=rankList)
 
+
 # --- [회원가입 / 로그인 / 로그아웃] ---
 @app.route('/register/', methods=['GET', 'POST'])
 def register():
@@ -148,6 +167,7 @@ def register():
         session['username'] = username
         return render_template('register.html', error='', success='회원가입에 성공했습니다.')
     return render_template('register.html', error='', success='')
+
 
 @app.route('/login/', methods=['GET', 'POST'])
 def login():
@@ -169,10 +189,12 @@ def login():
             return render_template('login.html', error='아이디 혹은 비밀번호가 일치하지 않습니다.')
     return render_template('login.html', error='')
 
+
 @app.route('/logout/')
 def logout():
     session.clear()
     return redirect('/')
+
 
 # --- [관리자 전용 대시보드] ---
 @app.route('/admin/')
@@ -195,6 +217,7 @@ def admin():
 
     return render_template('admin.html', users=users, scores=scores, userCount=userCount, scoreCount=scoreCount)
 
+
 @app.route('/admin/delete/<id>/')
 def admin_delete(id):
     if session.get('role') != 'admin': return redirect('/')
@@ -203,6 +226,7 @@ def admin_delete(id):
     conn.commit()
     conn.close()
     return redirect('/admin/')
+
 
 @app.route('/admin/role/<id>/')
 def admin_role(id):
@@ -216,6 +240,7 @@ def admin_role(id):
     conn.close()
     return redirect('/admin/')
 
+
 @app.route('/admin/score/delete/<id>/')
 def admin_score_delete(id):
     if session.get('role') != 'admin': return redirect('/')
@@ -225,8 +250,7 @@ def admin_score_delete(id):
     conn.close()
     return redirect('/admin/')
 
+
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
-
-#app.run(debug=True)
