@@ -1,38 +1,33 @@
-/* 🎮 1. 게임 보드판 배경 큰 네모칸 (대칭 규격으로 확장) */
+/* 🎮 게임 보드판 배경 큰 네모칸 */
 #game-container {
-    position: relative;
-    width: 499px;               /* 📐 여백 5칸(75px) + 타일 4칸(424px) = 499px */
-    height: 499px;              /* 📐 세로도 동일하게 정대칭 */
-    background-color: #bbada0;
-    border-radius: 6px;
-    padding: 15px;              /* JS의 GRID_GAP(15)과 완벽 동기화 */
-    box-sizing: border-box;     /* 패딩이 전체 크기를 가구현하지 않도록 고정 */
+    position: relative !important;
+    width: 499px !important;       /* 📐 무조건 이 크기로 강제 고정 */
+    height: 499px !important;      /* 📐 무조건 이 크기로 강제 고정 */
+    background-color: #bbada0 !important;
+    border-radius: 6px !important;
+    padding: 15px !important;
+    box-sizing: border-box !important;
 }
 
-/* 🧱 2. 실제 움직이는 숫자 타일 개별 속성 */
+/* 🧱 실제 움직이는 숫자 타일 개별 속성 */
 .tile {
-    position: absolute;
-    width: 106px;               /* 📐 JS의 TILE_SIZE(106)와 완벽 동기화 */
-    height: 106px;              /* 📐 JS의 TILE_SIZE(106)와 완벽 동기화 */
-    border-radius: 4px;
+    position: absolute !important;
+    width: 106px !important;       /* 📐 무조건 타일 크기를 106px로 강제 고정 */
+    height: 106px !important;      /* 📐 무조건 타일 크기를 106px로 강제 고정 */
+    border-radius: 4px !important;
+    transition: top 100ms ease-in-out, left 100ms ease-in-out !important;
 
-    /* 부드러운 이동 애니메이션 속도 세팅 */
-    transition: top 100ms ease-in-out, left 100ms ease-in-out;
-
-    /* 숫자 텍스트 정중앙 정렬 및 폰트 세팅 */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 38px;
-    color: #776e65;             /* 기본 글자 색상 */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    font-weight: bold !important;
+    font-size: 38px !important;
 }
 
-/* 🔲 3. [중요] 배경에 깔려있는 회색 빈 칸 격자 (Grid Cell) 크기 맞춤 */
-/* 만약 HTML 구조상 빈 칸(grid-cell) 태그를 만들어 쓰고 계신다면 이 크기도 106px로 맞춰야 배경과 포개어집니다. */
+/* 🔲 배경에 깔려있는 16개의 빈 칸 격자 (이 부분도 반드시 확인해야 합니다!) */
 .grid-cell {
-    width: 106px;
-    height: 106px;
-    background-color: rgba(238, 228, 218, 0.35);
-    border-radius: 4px;
+    width: 106px !important;
+    height: 106px !important;
+    background-color: rgba(238, 228, 218, 0.35) !important;
+    border-radius: 4px !important;
 }
